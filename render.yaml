@@ -3,7 +3,7 @@ services:
     name: aria2-terabox
     env: docker
     dockerfilePath: Dockerfile
-    buildCommand: ""  # No build command needed for this setup
+    buildCommand: ""
     startCommand: "./start.sh"
     ports:
       - port: 6800
