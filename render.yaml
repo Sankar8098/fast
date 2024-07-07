@@ -2,7 +2,7 @@ services:
   # A Docker web service
   - type: web
     name: fast
-    startCommand: python3 terabox.py
+    startCommand: bash start.sh
     buildCommand: pip3 install -U -r requirements.txt
     repo: https://github.com/Sankar8098/fast.git # optional
     region: oregon # optional (defaults to oregon)
