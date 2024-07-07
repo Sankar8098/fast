@@ -1,14 +1,9 @@
 services:
-  # A Docker web service
   - type: web
-    name: fast
-    startCommand: bash start.sh
-    buildCommand: pip3 install -U -r requirements.txt
-    repo: https://github.com/Sankar8098/fast.git # optional
-    region: oregon # optional (defaults to oregon)
-    plan: free # optional (defaults to starter)
-    branch: main # optional (defaults to master)
-    numInstances: 1 # optional (defaults to 1)
-    healthCheckPath: /
-
-#End of yaml
+    name: aria2
+    env: docker
+    dockerfilePath: Dockerfile
+    buildCommand: ""
+    startCommand: "./start.sh"
+    ports:
+      - 6800
