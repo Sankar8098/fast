@@ -12,7 +12,7 @@ from moviepy.editor import VideoFileClip
 aria2 = aria2p.API(
     aria2p.Client(
         host="http://localhost",
-        port=6800,
+        port=8000,
         secret=""
     )
 )
