@@ -17,7 +17,7 @@ aria2 = aria2p.API(
     )
 )
 async def download_video(url, reply_msg, user_mention, user_id):
-    response = requests.get(f"https://ytshorts.savetube.me/api/v1/terabox-downloader/?url={url}")
+    response = requests.get(f"https://teraboxdownloader.in/api/?url={url}")
     response.raise_for_status()
     data = response.json()
 
