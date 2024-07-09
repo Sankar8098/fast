@@ -10,7 +10,7 @@ import aria2p
 from status import format_progress_bar
 
 # MongoDB setup
-mongo_client = MongoClient("your_mongodb_connection_string")
+mongo_client = MongoClient("mongodb+srv://sankar:sankar@sankar.lldcdsx.mongodb.net/?retryWrites=true&w=majority")
 db = mongo_client["bot_database"]
 downloads_collection = db["downloads"]
 uploads_collection = db["uploads"]
