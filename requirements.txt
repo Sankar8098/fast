@@ -2,6 +2,8 @@ moviepy
 pyrogram
 python-dotenv
 aria2p
+dnspython
+pymongo
 requests
 Flask
 Werkzeug
