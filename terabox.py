@@ -6,8 +6,7 @@ from datetime import datetime
 from pyrogram.enums import ChatMemberStatus
 from dotenv import load_dotenv
 from os import environ
-import time
-from status import format_progress_bar  # Assumed to be part of your project
+import time  # Assumed to be part of your project
 from video import download_video, upload_video  # Assumed to be part of your project
 
 load_dotenv('config.env', override=True)
