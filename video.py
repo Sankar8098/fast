@@ -1,14 +1,21 @@
 import requests
-import aria2p
-from datetime import datetime
-from status import format_progress_bar
 import asyncio
-import os, time
+import os
+import time
 import logging
-import moviepy
+from datetime import datetime
 from moviepy.editor import VideoFileClip
+from pymongo import MongoClient
+import aria2p
+from status import format_progress_bar
 
+# MongoDB setup
+mongo_client = MongoClient("your_mongodb_connection_string")
+db = mongo_client["bot_database"]
+downloads_collection = db["downloads"]
+uploads_collection = db["uploads"]
 
+# Aria2 setup
 aria2 = aria2p.API(
     aria2p.Client(
         host="http://localhost",
@@ -16,6 +23,7 @@ aria2 = aria2p.API(
         secret=""
     )
 )
+
 async def download_video(url, reply_msg, user_mention, user_id):
     response = requests.get(f"https://teraboxdownloader.in/api/?url={url}")
     response.raise_for_status()
@@ -25,6 +33,18 @@ async def download_video(url, reply_msg, user_mention, user_id):
     fast_download_link = resolutions["Fast Download"]
     thumbnail_url = data["response"][0]["thumbnail"]
     video_title = data["response"][0]["title"]
+
+    # Insert initial download record into MongoDB
+    download_record = {
+        "url": url,
+        "video_title": video_title,
+        "thumbnail_url": thumbnail_url,
+        "user_mention": user_mention,
+        "user_id": user_id,
+        "start_time": datetime.now(),
+        "status": "Downloading"
+    }
+    download_id = downloads_collection.insert_one(download_record).inserted_id
 
     download = aria2.add_uris([fast_download_link])
     start_time = datetime.now()
@@ -61,10 +81,14 @@ async def download_video(url, reply_msg, user_mention, user_id):
         with open(thumbnail_path, "wb") as thumb_file:
             thumb_file.write(thumbnail_response.content)
 
-        await reply_msg.edit_text("ᴜᴘʟᴏᴀᴅɪɴɢ...")
+        # Update download record status in MongoDB
+        downloads_collection.update_one({"_id": download_id}, {"$set": {"status": "Completed", "file_path": file_path, "end_time": datetime.now()}})
+
+        await reply_msg.edit_text("Uploading...")
 
         return file_path, thumbnail_path, video_title
     else:
+        downloads_collection.update_one({"_id": download_id}, {"$set": {"status": "Failed", "end_time": datetime.now()}})
         raise Exception("Download failed")
 
 async def upload_video(client, file_path, thumbnail_path, video_title, reply_msg, collection_channel_id, user_mention, user_id, message):
@@ -82,19 +106,29 @@ async def upload_video(client, file_path, thumbnail_path, video_title, reply_msg
     except Exception as e:
         logging.warning(f"can't add duration: {e}")
         duration = 0
-        
+
     hours, remainder = divmod(duration, 3600)
     minutes, seconds = divmod(remainder, 60)
     conv_duration = f"{hours:02}:{minutes:02}:{seconds:02}"
 
-    
+    # Insert initial upload record into MongoDB
+    upload_record = {
+        "video_title": video_title,
+        "file_path": file_path,
+        "thumbnail_path": thumbnail_path,
+        "user_mention": user_mention,
+        "user_id": user_id,
+        "start_time": datetime.now(),
+        "status": "Uploading"
+    }
+    upload_id = uploads_collection.insert_one(upload_record).inserted_id
 
     async def progress(current, total):
         nonlocal uploaded, last_update_time
         uploaded = current
         percentage = (current / total) * 100
         elapsed_time_seconds = (datetime.now() - start_time).total_seconds()
-        
+
         if time.time() - last_update_time > 2:
             progress_text = format_progress_bar(
                 filename=video_title,
@@ -119,8 +153,8 @@ async def upload_video(client, file_path, thumbnail_path, video_title, reply_msg
         collection_message = await client.send_video(
             chat_id=collection_channel_id,
             video=file,
-            duration=duration,         #duration added here
-            caption=f"✨ {video_title} \n⏰Duration : {conv_duration} \n👤 ʟᴇᴇᴄʜᴇᴅ ʙʏ : {user_mention}\n📥 ᴜsᴇʀ ʟɪɴᴋ: tg://user?id={user_id}",
+            duration=duration,
+            caption=f"✨ {video_title} \n⏰Duration : {conv_duration} \n👤 Leached by: {user_mention}\n📥 User link: tg://user?id={user_id}",
             thumb=thumbnail_path,
             progress=progress
         )
@@ -137,4 +171,20 @@ async def upload_video(client, file_path, thumbnail_path, video_title, reply_msg
 
     os.remove(file_path)
     os.remove(thumbnail_path)
+
+    # Update upload record status in MongoDB
+    uploads_collection.update_one({"_id": upload_id}, {"$set": {"status": "Completed", "end_time": datetime.now()}})
+
     return collection_message.id
+
+# Example usage in your bot handler function
+async def handle_download_and_upload(url, reply_msg, user_mention, user_id, client, collection_channel_id, message):
+    try:
+        file_path, thumbnail_path, video_title = await download_video(url, reply_msg, user_mention, user_id)
+        collection_message_id = await upload_video(client, file_path, thumbnail_path, video_title, reply_msg, collection_channel_id, user_mention, user_id, message)
+        return collection_message_id
+    except Exception as e:
+        logging.error(f"Error handling download and upload: {e}")
+        await reply_msg.edit_text(f"Error: {e}")
+
+# Replace "your_mongodb_connection_string" with your actual MongoDB connection string.
