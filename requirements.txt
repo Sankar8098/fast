@@ -1,4 +1,5 @@
 moviepy
+TgCrypto
 pyrogram
 python-dotenv
 aria2p
