@@ -1,21 +1,16 @@
-FROM python:3.9-slim
+FROM python:3.9
 
 # Install aria2
 RUN apt-get update && apt-get install -y aria2
 
-# Copy your start script and Python script
-COPY start.sh /start.sh
-COPY terabox.py /terabox.py
+# Set the working directory
+WORKDIR /app
 
-# Install any Python dependencies
-COPY requirements.txt /requirements.txt
-RUN pip install -r /requirements.txt
+# Copy files to the container
+COPY . /app
 
-# Make the start script executable
-RUN chmod +x /start.sh
+# Install Python dependencies
+RUN pip install --no-cache-dir --force-reinstall -r requirements.txt
 
-# Expose the RPC port
-EXPOSE 6800
-
-# Set the entry point to the start script
-ENTRYPOINT ["/start.sh"]
+# Start aria2c and the Python script
+CMD aria2c --enable-rpc --rpc-listen-all=false --rpc-allow-origin-all --daemon && python terabox.py
