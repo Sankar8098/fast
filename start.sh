@@ -1,12 +1,10 @@
 #!/bin/sh
 
-# Install aria2 if not present
-if ! command -v aria2c &> /dev/null; then
-    apt-get update && apt-get install -y aria2
-fi
+# Ensure moviepy installs correctly
+pip install --no-cache-dir --force-reinstall -r requirements.txt
 
-# Start aria2c in daemon mode
-aria2c --enable-rpc --rpc-listen-all=false --rpc-allow-origin-all --daemon
+# Start aria2c in the background
+aria2c --enable-rpc --rpc-listen-all=false --rpc-allow-origin-all --daemon &
 
 # Run your Python script
 python terabox.py
