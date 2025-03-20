@@ -3,8 +3,8 @@ import asyncio
 import os
 import time
 import logging
+import subprocess
 from datetime import datetime
-from moviepy.editor import VideoFileClip
 from pymongo import MongoClient
 import aria2p
 from status import format_progress_bar
@@ -23,6 +23,20 @@ aria2 = aria2p.API(
         secret=""
     )
 )
+
+# Function to get video duration using ffmpeg
+def get_video_duration(file_path):
+    try:
+        result = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", file_path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        return int(float(result.stdout.strip()))
+    except Exception as e:
+        logging.warning(f"Could not get video duration: {e}")
+        return 0
 
 async def download_video(url, reply_msg, user_mention, user_id):
     response = requests.get(f"https://terabox.udayscriptsx.workers.dev/?url={url}")
@@ -76,6 +90,7 @@ async def download_video(url, reply_msg, user_mention, user_id):
     if download.is_complete:
         file_path = download.files[0].path
 
+        # Download thumbnail
         thumbnail_path = "thumbnail.jpg"
         thumbnail_response = requests.get(thumbnail_url)
         with open(thumbnail_path, "wb") as thumb_file:
@@ -97,16 +112,8 @@ async def upload_video(client, file_path, thumbnail_path, video_title, reply_msg
     start_time = datetime.now()
     last_update_time = time.time()
 
-    try:
-        duration = 0
-        path = str(file_path)
-        clip = VideoFileClip(path)
-        duration = int(clip.duration)
-        clip.close()
-    except Exception as e:
-        logging.warning(f"can't add duration: {e}")
-        duration = 0
-
+    # Get video duration using ffmpeg
+    duration = get_video_duration(file_path)
     hours, remainder = divmod(duration, 3600)
     minutes, seconds = divmod(remainder, 60)
     conv_duration = f"{hours:02}:{minutes:02}:{seconds:02}"
@@ -154,7 +161,7 @@ async def upload_video(client, file_path, thumbnail_path, video_title, reply_msg
             chat_id=collection_channel_id,
             video=file,
             duration=duration,
-            caption=f"✨ {video_title} \n⏰Duration : {conv_duration} \n👤 Leached by: {user_mention}\n📥 User link: tg://user?id={user_id}",
+            caption=f"✨ {video_title} \n⏰ Duration: {conv_duration} \n👤 Leached by: {user_mention}\n📥 User link: tg://user?id={user_id}",
             thumb=thumbnail_path,
             progress=progress
         )
@@ -186,5 +193,4 @@ async def handle_download_and_upload(url, reply_msg, user_mention, user_id, clie
     except Exception as e:
         logging.error(f"Error handling download and upload: {e}")
         await reply_msg.edit_text(f"Error: {e}")
-
-# Replace "your_mongodb_connection_string" with your actual MongoDB connection string.
+                       
