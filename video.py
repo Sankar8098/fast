@@ -10,6 +10,11 @@ import aria2p
 from pyrogram import Client, filters
 from status import format_progress_bar
 
+# Telegram Bot API Credentials
+API_ID = "your_api_id"
+API_HASH = "your_api_hash"
+BOT_TOKEN = "your_bot_token"
+COLLECTION_CHANNEL_ID = -1001234567890  # Replace with your channel ID
 
 # MongoDB setup
 mongo_client = MongoClient("mongodb+srv://sankar:sankar@sankar.lldcdsx.mongodb.net/?retryWrites=true&w=majority")
@@ -205,4 +210,3 @@ async def handle_command(client, message):
     await handle_download_and_upload(url, reply_msg, user_mention, user_id, client, COLLECTION_CHANNEL_ID, message)
 
 app.run()
-        
