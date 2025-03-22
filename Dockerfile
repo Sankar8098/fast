@@ -12,5 +12,5 @@ COPY . /app
 # Install Python dependencies
 RUN pip install --no-cache-dir --force-reinstall -r requirements.txt
 
-# Start aria2c and the Python script
-CMD aria2c --enable-rpc --rpc-listen-all=false --rpc-allow-origin-all --daemon && python terabox.py
+# Start aria2c and run the Python script
+CMD ["sh", "-c", "aria2c --enable-rpc --rpc-listen-all=false --rpc-allow-origin-all --daemon && python terabox.py"]
