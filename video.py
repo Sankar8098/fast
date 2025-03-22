@@ -7,7 +7,9 @@ import subprocess
 from datetime import datetime
 from pymongo import MongoClient
 import aria2p
+from pyrogram import Client, filters
 from status import format_progress_bar
+
 
 # MongoDB setup
 mongo_client = MongoClient("mongodb+srv://sankar:sankar@sankar.lldcdsx.mongodb.net/?retryWrites=true&w=majority")
@@ -24,6 +26,9 @@ aria2 = aria2p.API(
     )
 )
 
+# Initialize Pyrogram Client
+app = Client("terabox_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+
 # Function to get video duration using ffmpeg
 def get_video_duration(file_path):
     try:
@@ -39,14 +44,20 @@ def get_video_duration(file_path):
         return 0
 
 async def download_video(url, reply_msg, user_mention, user_id):
-    response = requests.get(f"https://terabox.udayscriptsx.workers.dev/?url={url}")
+    api_url = "https://yt.savetube.me/terabox-downloader"
+    payload = {"url": url}
+
+    response = requests.post(api_url, json=payload)
     response.raise_for_status()
     data = response.json()
 
-    resolutions = data["response"][0]["resolutions"]
-    fast_download_link = resolutions["Fast Download"]
-    thumbnail_url = data["response"][0]["thumbnail"]
-    video_title = data["response"][0]["title"]
+    if not data.get("success"):
+        raise Exception("Failed to fetch download details from API")
+
+    video_info = data["response"][0]
+    fast_download_link = video_info["url"]
+    thumbnail_url = video_info["thumbnail"]
+    video_title = video_info["title"]
 
     # Insert initial download record into MongoDB
     download_record = {
@@ -172,25 +183,26 @@ async def upload_video(client, file_path, thumbnail_path, video_title, reply_msg
         )
         await asyncio.sleep(1)
         await message.delete()
-        await message.reply_sticker("CAACAgIAAxkBAAJiH2Z-YWzicFNWaiq8L4KZy690DI46AAJZAAMh8AQcR5_uo_24LfE1BA")
 
     await reply_msg.delete()
-
     os.remove(file_path)
     os.remove(thumbnail_path)
 
-    # Update upload record status in MongoDB
     uploads_collection.update_one({"_id": upload_id}, {"$set": {"status": "Completed", "end_time": datetime.now()}})
-
     return collection_message.id
 
-# Example usage in your bot handler function
-async def handle_download_and_upload(url, reply_msg, user_mention, user_id, client, collection_channel_id, message):
-    try:
-        file_path, thumbnail_path, video_title = await download_video(url, reply_msg, user_mention, user_id)
-        collection_message_id = await upload_video(client, file_path, thumbnail_path, video_title, reply_msg, collection_channel_id, user_mention, user_id, message)
-        return collection_message_id
-    except Exception as e:
-        logging.error(f"Error handling download and upload: {e}")
-        await reply_msg.edit_text(f"Error: {e}")
-                       
+@app.on_message(filters.command("download"))
+async def handle_command(client, message):
+    if len(message.command) < 2:
+        await message.reply_text("Please provide a TeraBox link.")
+        return
+
+    url = message.command[1]
+    reply_msg = await message.reply_text("Processing...")
+    user_mention = message.from_user.mention
+    user_id = message.from_user.id
+
+    await handle_download_and_upload(url, reply_msg, user_mention, user_id, client, COLLECTION_CHANNEL_ID, message)
+
+app.run()
+        
