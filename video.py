@@ -11,10 +11,10 @@ from pyrogram import Client, filters
 from status import format_progress_bar
 
 # Telegram Bot API Credentials
-API_ID = "your_api_id"
-API_HASH = "your_api_hash"
-BOT_TOKEN = "your_bot_token"
-COLLECTION_CHANNEL_ID = -1001234567890  # Replace with your channel ID
+API_ID = "20026290"
+API_HASH = "561ae93345a2a4e435cff3c75a088b72"
+BOT_TOKEN = "7838756294:AAHl13XUVw-8wgVJmla-Dz5qUl-8C9ijB_I"
+COLLECTION_CHANNEL_ID = -1002688354661  # Replace with your channel ID
 
 # MongoDB setup
 mongo_client = MongoClient("mongodb+srv://sankar:sankar@sankar.lldcdsx.mongodb.net/?retryWrites=true&w=majority")
